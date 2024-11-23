@@ -1,0 +1,48 @@
+name: CI/CD Workflow
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+    - name: Install dependencies
+      run: npm install
+    - name: Run tests
+      run: npm test
+    - name: Upload Test Results (if needed)
+      if: failure() # Fixed indentation
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-results
+        path: test-results/ # Replace with your test results folder if applicable
+
+  deploy-to-vercel:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: success()  # Only deploy if tests passed
+
+    steps:
+    # Checkout the code again for the deployment job
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # # Set up Vercel CLI
+    - name: Install Vercel CLI
+      run: npm install -g vercel
+
+    - name: Deploy to Vercel
+      run: |
+        vercel --token ${{ secrets.VERCEL_TOKEN }} --prod --confirm
+      env:
+        VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
